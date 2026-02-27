@@ -1,12 +1,10 @@
-import {prisma} from "@/lib/prisma";
 import Link from "next/link";
+import {getSources} from "@/lib/api/sources";
 
 export const runtime = "nodejs";
 
 export default async function SourcesListPage() {
-  const sources = await prisma.source.findMany({
-    orderBy: { ingestedAt: "desc" },
-  });
+  const sources = await getSources();
 
   return (
     <div>

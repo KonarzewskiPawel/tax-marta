@@ -6,6 +6,21 @@ export const runtime = "nodejs";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
+export async function GET() {
+  try {
+    const sources = await prisma.source.findMany({
+      orderBy: { ingestedAt: "desc" },
+    });
+    return Response.json(sources);
+  } catch (error) {
+    console.error("Failed to list sources:", error);
+    return Response.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();

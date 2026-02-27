@@ -2,6 +2,7 @@
 
 import {type FormEvent, useState} from "react";
 import {useRouter} from "next/navigation";
+import {createSource} from "@/lib/api/sources";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -9,6 +10,22 @@ export default function NewSourcePage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  function getErrorMessage(err: unknown): string {
+    if (!(err instanceof Error)) {
+      return "Unexpected error. Please try again.";
+    }
+
+    if (err.message.includes("Failed to fetch")) {
+      return "Network error. Check your connection or try again.";
+    }
+
+    if (err.message.toLowerCase().includes("already exists")) {
+      return "This PDF already exists in the system.";
+    }
+
+    return err.message || "Unexpected error. Please try again.";
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,22 +61,17 @@ export default function NewSourcePage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/admin/sources", {
-        method: "POST",
-        body: formData,
+      const result = await createSource({
+        title,
+        sourceUrl: formData.get("sourceUrl") as string | undefined,
+        publishedAt: formData.get("publishedAt") as string | undefined,
+        tags: formData.get("tags") as string | undefined,
+        pdfFile,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Something went wrong");
-        setSubmitting(false);
-        return;
-      }
-
-      router.push(`/admin/sources/${data.id}`);
-    } catch {
-      setError("Network error. Please try again.");
+      router.push(`/admin/sources/${result.id}`);
+    } catch (err) {
+      setError(getErrorMessage(err));
       setSubmitting(false);
     }
   }
