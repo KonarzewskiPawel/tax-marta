@@ -21,7 +21,7 @@ export async function GET(
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": source.mimeType,
-        "Content-Disposition": `attachment; filename="${source.originalFilename}"`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(source.originalFilename)}`,
         "Content-Length": String(buffer.length),
       },
     });
