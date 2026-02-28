@@ -17,9 +17,22 @@ export interface Source {
   updatedAt: string;
 }
 
-export async function getSources(): Promise<Source[]> {
+/**
+ * Build headers for API requests.
+ * Server components pass the cookie string from `next/headers`.
+ * Client components omit it (browser attaches cookies automatically).
+ */
+function buildHeaders(cookieHeader?: string): HeadersInit {
+  if (cookieHeader) {
+    return { cookie: cookieHeader };
+  }
+  return {};
+}
+
+export async function getSources(cookieHeader?: string): Promise<Source[]> {
   const res = await fetch(`${BASE_URL}/api/admin/sources`, {
     cache: "no-store",
+    headers: buildHeaders(cookieHeader),
   });
   if (!res.ok) {
     throw new Error("Failed to fetch sources");
@@ -27,9 +40,10 @@ export async function getSources(): Promise<Source[]> {
   return res.json();
 }
 
-export async function getSource(id: string): Promise<Source | null> {
+export async function getSource(id: string, cookieHeader?: string): Promise<Source | null> {
   const res = await fetch(`${BASE_URL}/api/admin/sources/${id}`, {
     cache: "no-store",
+    headers: buildHeaders(cookieHeader),
   });
   if (res.status === 404) {
     return null;
