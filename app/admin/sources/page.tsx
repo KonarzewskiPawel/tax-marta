@@ -1,10 +1,16 @@
 import Link from "next/link";
+import {cookies} from "next/headers";
 import {getSources} from "@/lib/api/sources";
 
 export const runtime = "nodejs";
 
 export default async function SourcesListPage() {
-  const sources = await getSources();
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+  const sources = await getSources(cookieHeader);
 
   return (
     <div>
