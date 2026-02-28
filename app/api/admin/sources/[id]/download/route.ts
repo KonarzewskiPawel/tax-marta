@@ -1,13 +1,17 @@
 import {prisma} from "@/lib/prisma";
 import {getFile} from "@/lib/storage";
+import {verifyRequest} from "@/lib/auth";
 import {NextRequest} from "next/server";
 
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = verifyRequest(request);
+  if (authError) return authError;
+
   try {
     const { id } = await params;
 

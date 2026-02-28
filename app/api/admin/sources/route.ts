@@ -1,12 +1,16 @@
 import {prisma} from "@/lib/prisma";
 import {saveFile} from "@/lib/storage";
+import {verifyRequest} from "@/lib/auth";
 import {createHash} from "node:crypto";
 
 export const runtime = "nodejs";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authError = verifyRequest(request);
+  if (authError) return authError;
+
   try {
     const sources = await prisma.source.findMany({
       orderBy: { ingestedAt: "desc" },
@@ -22,6 +26,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authError = verifyRequest(request);
+  if (authError) return authError;
+
   try {
     const formData = await request.formData();
 
