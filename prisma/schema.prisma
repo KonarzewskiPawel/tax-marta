@@ -34,4 +34,21 @@ model Source {
   ingestedAt       DateTime     @default(now())
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+
+  chunks SourceChunk[]
+}
+
+model SourceChunk {
+  id         String   @id @default(uuid())
+  sourceId   String   @map("source_id")
+  source     Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  chunkIndex Int      @map("chunk_index")
+  pageStart  Int?     @map("page_start")
+  pageEnd    Int?     @map("page_end")
+  content    String
+  // embedding column handled via raw SQL (Prisma doesn't support vector type)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("source_chunks")
+  @@index([sourceId])
 }
