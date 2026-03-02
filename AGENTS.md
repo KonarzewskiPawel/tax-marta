@@ -11,10 +11,14 @@ Upload PDFs, extract text, chunk, embed (OpenAI), and store vectors in Postgres 
 
 ## Build / Run Commands
 
+MUST ensure the project builds and unit tests pass after every meaningful change.
+
 ```bash
 npm run dev          # Start dev server (http://localhost:3000)
 npm run build        # Production build (also runs TypeScript type-checking)
 npm run start        # Start production server
+
+npm run test:run     # Run all unit tests
 
 npx prisma generate  # Regenerate Prisma client after schema changes
 npx prisma migrate deploy  # Apply pending migrations to DB
