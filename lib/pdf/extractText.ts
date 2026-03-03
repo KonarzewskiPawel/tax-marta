@@ -1,4 +1,10 @@
 import {PDFParse} from "pdf-parse";
+// Pre-load the pdfjs-dist worker so the fake-worker setup finds
+// WorkerMessageHandler on globalThis and skips the broken dynamic import().
+// This is a safety net alongside serverExternalPackages in next.config.ts.
+import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs";
+
+(globalThis as any).pdfjsWorker = pdfjsWorker;
 
 /** Result of extracting text from a PDF file. */
 export interface PdfExtraction {
