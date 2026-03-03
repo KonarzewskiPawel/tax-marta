@@ -1,6 +1,7 @@
 import {prisma} from "@/lib/prisma";
 import {saveFile} from "@/lib/storage";
 import {verifyRequest} from "@/lib/auth";
+import {processSource} from "@/lib/processing/processSource";
 import {createHash} from "node:crypto";
 
 export const runtime = "nodejs";
@@ -123,6 +124,14 @@ export async function POST(request: Request) {
         sha256,
       },
     });
+
+    // Trigger processing (sync for MVP — extract, chunk, embed, store)
+    // Processing errors don't fail the upload — status will be FAILED
+    try {
+      await processSource(source.id);
+    } catch (processingError) {
+      console.error("Source processing failed (upload still succeeded):", processingError);
+    }
 
     return Response.json({ id: source.id }, { status: 201 });
 
