@@ -1,3 +1,5 @@
+import {splitSections} from "./splitSections";
+
 /** A single chunk of text with its sequential index. */
 export interface TextChunk {
   /** Zero-based position of this chunk in the source document. */
@@ -20,6 +22,14 @@ export interface ChunkOptions {
    * @default 200
    */
   overlapChars?: number;
+  /**
+   * When true, first split text on numbered section headings
+   * (e.g. "1. Title", "142. 2. Title") before applying character-
+   * based splitting. Sections that fit within `maxChars` become
+   * a single chunk; oversized sections are sub-split with overlap.
+   * @default true
+   */
+  sectionAware?: boolean;
 }
 
 /**
@@ -65,36 +75,29 @@ function findBestSplitPoint(slice: string, minPosition: number): number {
 }
 
 /**
- * Split normalized text into overlapping chunks suitable for embedding.
+ * Split a single piece of text into overlapping chunks by character count.
  *
- * The algorithm advances through the text in steps of `maxChars`,
- * but tries to avoid cutting mid-sentence by backtracking to find
- * the best boundary point: first a paragraph break (`\n\n`), then
- * a line break (`\n`), then a sentence boundary (`. ` followed by
- * an uppercase letter). Consecutive chunks overlap by `overlapChars`
- * characters so that context is preserved across boundaries.
+ * This is the low-level character-based splitter. It advances through
+ * the text in steps of `maxChars`, backtracking to find the best
+ * boundary point (paragraph break, line break, or sentence boundary).
  *
- * @param text - Normalized text to split (output of `normalizeText()`)
- * @param opts - Optional chunk size and overlap configuration
- * @returns Array of text chunks with sequential indices
+ * @param text - Text to split
+ * @param maxChars - Maximum characters per chunk
+ * @param overlapChars - Overlap between consecutive chunks
+ * @returns Array of trimmed text strings
  */
-export function chunkText(
+function splitByChars(
   text: string,
-  opts: ChunkOptions = {}
-): TextChunk[] {
-  const maxChars = opts.maxChars ?? 1500;
-  const overlapChars = opts.overlapChars ?? 200;
+  maxChars: number,
+  overlapChars: number
+): string[] {
   const minChunkSize = overlapChars;
-
-  const chunks: TextChunk[] = [];
+  const parts: string[] = [];
   let offset = 0;
-  let chunkIndex = 0;
 
   while (offset < text.length) {
-    // If remaining text is smaller than minimum chunk size, skip
-    // (it's already included in the overlap of the previous chunk)
     const remaining = text.length - offset;
-    if (remaining <= minChunkSize && chunks.length > 0) {
+    if (remaining <= minChunkSize && parts.length > 0) {
       break;
     }
 
@@ -111,14 +114,67 @@ export function chunkText(
 
     const content = slice.trim();
     if (content.length > 0) {
-      chunks.push({chunkIndex, content});
-      chunkIndex++;
+      parts.push(content);
     }
 
-    // Advance by the actual slice length minus overlap
-    // But never advance by less than minChunkSize to avoid tiny increments
     const advance = slice.length - overlapChars;
     offset += Math.max(minChunkSize, advance);
+  }
+
+  return parts;
+}
+
+/**
+ * Split normalized text into overlapping chunks suitable for embedding.
+ *
+ * When `sectionAware` is true (the default), the text is first split
+ * on numbered section headings (e.g. "1. Title", "142. 2. Title").
+ * Each section that fits within `maxChars` becomes a single chunk.
+ * Sections exceeding `maxChars` are sub-split using character-based
+ * splitting with overlap.
+ *
+ * When `sectionAware` is false, the text is split purely by character
+ * count with overlap, backtracking to the best boundary point.
+ *
+ * @param text - Normalized text to split (output of `normalizeText()`)
+ * @param opts - Optional chunk size, overlap, and section-awareness configuration
+ * @returns Array of text chunks with sequential indices
+ */
+export function chunkText(
+  text: string,
+  opts: ChunkOptions = {}
+): TextChunk[] {
+  const maxChars = opts.maxChars ?? 1500;
+  const overlapChars = opts.overlapChars ?? 200;
+  const sectionAware = opts.sectionAware ?? true;
+
+  if (!sectionAware) {
+    // Pure character-based splitting
+    return splitByChars(text, maxChars, overlapChars).map(
+      (content, i) => ({chunkIndex: i, content})
+    );
+  }
+
+  // Section-aware splitting:
+  // 1. Split into logical sections based on numbered headings
+  // 2. Sections that fit within maxChars become one chunk
+  // 3. Oversized sections are sub-split with character-based splitting
+  const sections = splitSections(text);
+  const chunks: TextChunk[] = [];
+  let chunkIndex = 0;
+
+  for (const section of sections) {
+    if (section.length <= maxChars) {
+      chunks.push({chunkIndex, content: section});
+      chunkIndex++;
+    } else {
+      // Section too large — sub-split with overlap
+      const subChunks = splitByChars(section, maxChars, overlapChars);
+      for (const sub of subChunks) {
+        chunks.push({chunkIndex, content: sub});
+        chunkIndex++;
+      }
+    }
   }
 
   return chunks;
