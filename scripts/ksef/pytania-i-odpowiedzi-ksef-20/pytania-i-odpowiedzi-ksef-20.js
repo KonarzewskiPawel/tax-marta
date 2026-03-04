@@ -98,7 +98,7 @@
         .map(
             (r, idx) => `
       <div class="item">
-        <div class="q">${escapeHtml(r.question)}</div>
+        <div class="q">${idx + 1}Q. ${escapeHtml(r.question)}</div>
         <div class="a">${escapeHtml(r.answer)}</div>
       </div>`
         )
