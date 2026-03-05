@@ -10,8 +10,10 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.41",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
+    "ai": "^6.0.116",
     "next": "16.1.6",
     "pdf-parse": "^2.4.5",
     "pg": "^8.19.0",
