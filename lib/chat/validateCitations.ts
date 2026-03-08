@@ -27,6 +27,7 @@ export function validateCitations(
   const validated: Citation[] = [];
 
   for (const citation of citations) {
+    //Check chunkId exists in retrieved set — remove hallucinated citations
     const chunk = chunkById.get(citation.chunkId);
     if (!chunk) continue;
 
