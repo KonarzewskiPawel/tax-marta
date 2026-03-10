@@ -1,4 +1,10 @@
 import {verifyRequest} from "@/lib/auth";
+import {retrieveChunks} from "@/lib/chat/retrieveChunks";
+import {evaluateEvidence} from "@/lib/chat/evidenceGate";
+import {callLLM} from "@/lib/chat/callLLM";
+import {mapCitations} from "@/lib/chat/mapCitations";
+import {validateCitations} from "@/lib/chat/validateCitations";
+import {buildChatResponse, buildRefusalResponse} from "@/lib/chat/buildResponse";
 
 export const runtime = "nodejs";
 
@@ -12,6 +18,8 @@ const MAX_MESSAGE_LENGTH = 1000;
  * retrieves relevant chunks, evaluates evidence quality,
  * generates a structured answer with citations, and validates
  * citations server-side before responding.
+ *
+ * Pipeline: parse body → retrieve → gate → (refuse or generate) → validate → respond
  *
  * Request body: { "message": string }
  * Response body: ChatResponse (see lib/chat/types.ts)
@@ -40,11 +48,34 @@ export async function POST(request: Request) {
 
     const question = message.trim();
 
-    // TODO: wire full pipeline in substep 6.2
-    return Response.json(
-      {message: "Chat endpoint ready", question},
-      {status: 200},
-    );
+    // 1. RETRIEVE — embed question + cosine search across all ready sources
+    const chunks = await retrieveChunks(question);
+
+    // 2. GATE — heuristic evidence quality check
+    const gateResult = evaluateEvidence(chunks);
+
+    if (!gateResult.pass) {
+      // Not enough evidence — refuse without calling the LLM
+      return Response.json(buildRefusalResponse());
+    }
+
+    // 3. GENERATE — build prompt + structured LLM call
+    const llmResponse = await callLLM({question, chunks});
+
+    // 4. MAP — translate LLM chunkIndex references to full citation metadata
+    const mappedCitations = mapCitations(llmResponse, chunks);
+
+    // 5. VALIDATE — enforce citation integrity server-side
+    const validatedCitations = validateCitations(mappedCitations, chunks);
+
+    // 6. RESPOND — assemble final response (handles 0-citation refusal override)
+    const response = buildChatResponse({
+      gateResult,
+      llmResponse,
+      validatedCitations,
+    });
+
+    return Response.json(response);
   } catch (error) {
     console.error("Failed to process chat request:", error);
     return Response.json(
