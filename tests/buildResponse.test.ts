@@ -6,6 +6,10 @@ const FIXED_NOW = "2026-03-08T12:00:00.000Z";
 const DISCLAIMER = "Informacja pogladowa — nie stanowi porady prawnej ani podatkowej.";
 const DEFAULT_REFUSAL_QUESTION =
   "Czy pytanie dotyczy KSeF, e-Faktury, czy innego tematu podatkowego?";
+const REFUSAL_MESSAGE =
+  "Nie mam wystarczajacych zrodel oficjalnych, zeby odpowiedziec na to pytanie.";
+const REFUSAL_SUGGESTION =
+  "Sprawdz oficjalne materialy na ksef.podatki.gov.pl lub dodaj odpowiedni dokument PDF.";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -71,6 +75,18 @@ describe("buildRefusalResponse", () => {
 
     expect(result.clarifyingQuestion).toBe(DEFAULT_REFUSAL_QUESTION);
   });
+
+  it("includes Polish refusal message", () => {
+    const result = buildRefusalResponse();
+
+    expect(result.refusalMessage).toBe(REFUSAL_MESSAGE);
+  });
+
+  it("includes actionable suggestion", () => {
+    const result = buildRefusalResponse();
+
+    expect(result.suggestion).toBe(REFUSAL_SUGGESTION);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -102,6 +118,17 @@ describe("buildChatResponse — gate refused", () => {
 
     expect(result.refused).toBe(true);
     expect(result.answer).toBe("");
+  });
+
+  it("includes refusal message and suggestion when gate refused", () => {
+    const result = buildChatResponse({
+      gateResult: makeGateResult({pass: false}),
+      llmResponse: null,
+      validatedCitations: [],
+    });
+
+    expect(result.refusalMessage).toBe(REFUSAL_MESSAGE);
+    expect(result.suggestion).toBe(REFUSAL_SUGGESTION);
   });
 });
 
@@ -143,6 +170,17 @@ describe("buildChatResponse — 0 valid citations override", () => {
 
     expect(result.refused).toBe(true);
     expect(result.clarifyingQuestion).toBe(DEFAULT_REFUSAL_QUESTION);
+  });
+
+  it("includes refusal message and suggestion on citation-refusal", () => {
+    const result = buildChatResponse({
+      gateResult: makeGateResult({pass: true}),
+      llmResponse: makeLLMResponse(),
+      validatedCitations: [],
+    });
+
+    expect(result.refusalMessage).toBe(REFUSAL_MESSAGE);
+    expect(result.suggestion).toBe(REFUSAL_SUGGESTION);
   });
 });
 
@@ -197,5 +235,16 @@ describe("buildChatResponse — success", () => {
     });
 
     expect(result.clarifyingQuestion).toBeNull();
+  });
+
+  it("sets refusalMessage and suggestion to null on success", () => {
+    const result = buildChatResponse({
+      gateResult: makeGateResult({pass: true}),
+      llmResponse: makeLLMResponse(),
+      validatedCitations: [makeCitation()],
+    });
+
+    expect(result.refusalMessage).toBeNull();
+    expect(result.suggestion).toBeNull();
   });
 });

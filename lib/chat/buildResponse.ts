@@ -3,6 +3,14 @@ import {type ChatResponse, type Citation, type EvidenceGateResult, type LLMRespo
 /** Legal disclaimer included in every response. */
 const DISCLAIMER = "Informacja pogladowa — nie stanowi porady prawnej ani podatkowej.";
 
+/** Polish refusal message shown to the user when evidence is insufficient. */
+const REFUSAL_MESSAGE =
+  "Nie mam wystarczajacych zrodel oficjalnych, zeby odpowiedziec na to pytanie.";
+
+/** Actionable suggestion shown alongside refusals. */
+const REFUSAL_SUGGESTION =
+  "Sprawdz oficjalne materialy na ksef.podatki.gov.pl lub dodaj odpowiedni dokument PDF.";
+
 /** Default clarifying question when refusing due to insufficient evidence. */
 const DEFAULT_REFUSAL_QUESTION =
   "Czy pytanie dotyczy KSeF, e-Faktury, czy innego tematu podatkowego?";
@@ -24,7 +32,9 @@ export function buildRefusalResponse(
     citations: [],
     confidence: "low",
     refused: true,
+    refusalMessage: REFUSAL_MESSAGE,
     clarifyingQuestion: clarifyingQuestion ?? DEFAULT_REFUSAL_QUESTION,
+    suggestion: REFUSAL_SUGGESTION,
     disclaimer: DISCLAIMER,
     asOf: new Date().toISOString(),
   };
@@ -69,7 +79,9 @@ export function buildChatResponse(args: {
     citations: validatedCitations,
     confidence: gateResult.confidence,
     refused: false,
+    refusalMessage: null,
     clarifyingQuestion: llmResponse.clarifyingQuestion,
+    suggestion: null,
     disclaimer: DISCLAIMER,
     asOf: new Date().toISOString(),
   };

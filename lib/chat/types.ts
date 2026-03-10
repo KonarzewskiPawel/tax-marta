@@ -98,8 +98,12 @@ export interface ChatResponse {
   confidence: "low" | "medium" | "high";
   /** Whether the bot refused to answer due to insufficient evidence. */
   refused: boolean;
+  /** Polish refusal message shown to the user. Null when not refused. */
+  refusalMessage: string | null;
   /** Optional clarifying question to help the user refine their query. */
   clarifyingQuestion: string | null;
+  /** Actionable suggestion for the user. Null when not refused. */
+  suggestion: string | null;
   /** Legal disclaimer. */
   disclaimer: string;
   /** ISO 8601 timestamp of when the response was generated. */
