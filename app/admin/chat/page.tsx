@@ -1,7 +1,7 @@
 "use client";
 
 import {type FormEvent, useEffect, useRef, useState} from "react";
-import {type ChatResponse} from "@/lib/chat/types";
+import {type ChatResponse, type Citation} from "@/lib/chat/types";
 
 /** A single exchange in the chat history. */
 interface ChatEntry {
@@ -104,8 +104,10 @@ export default function ChatPage() {
             <div className="flex justify-start">
               {entry.response ? (
                 <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm max-w-[80%]">
-                  {/* Answer text — placeholder, citations added in 7.3, refusal in 7.4 */}
                   <p className="whitespace-pre-wrap">{entry.response.answer || "(brak odpowiedzi)"}</p>
+                  {entry.response.citations.length > 0 && (
+                    <CitationList citations={entry.response.citations} />
+                  )}
                 </div>
               ) : entry.error ? (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 max-w-[80%]">
@@ -141,6 +143,43 @@ export default function ChatPage() {
           {loading ? "Wysylanie..." : "Wyslij"}
         </button>
       </form>
+    </div>
+  );
+}
+
+/** Format a date string as DD.MM.YYYY or return null. */
+function formatDate(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+/** Display a "Zrodla" section with a bullet list of citations. */
+function CitationList({citations}: {citations: Citation[]}) {
+  return (
+    <div className="mt-3 border-t border-gray-100 pt-3">
+      <p className="text-xs font-semibold text-gray-500 mb-1">Zrodla:</p>
+      <ul className="space-y-1">
+        {citations.map((citation, i) => {
+          const date = formatDate(citation.publishedAt);
+          const titlePart = citation.sourceUrl
+            ? <a href={citation.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:text-blue-800">{citation.sourceTitle}</a>
+            : <span className="font-medium">{citation.sourceTitle}</span>;
+
+          return (
+            <li key={i} className="text-xs text-gray-600">
+              {titlePart}
+              {date && <span className="text-gray-400"> ({date})</span>}
+              {" — "}
+              <span className="italic text-gray-500">&ldquo;{citation.quote}&rdquo;</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
