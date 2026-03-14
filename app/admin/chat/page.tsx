@@ -123,6 +123,13 @@ export default function ChatPage() {
                 </div>
               )}
             </div>
+
+            {/* asOf timestamp */}
+            {entry.response && (
+              <p className="text-xs text-gray-400 ml-1">
+                Odpowiedz wygenerowana {formatDate(entry.response.asOf)}
+              </p>
+            )}
           </div>
         ))}
 
