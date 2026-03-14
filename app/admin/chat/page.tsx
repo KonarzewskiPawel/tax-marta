@@ -103,12 +103,16 @@ export default function ChatPage() {
             {/* Response or loading/error */}
             <div className="flex justify-start">
               {entry.response ? (
-                <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm max-w-[80%]">
-                  <p className="whitespace-pre-wrap">{entry.response.answer || "(brak odpowiedzi)"}</p>
-                  {entry.response.citations.length > 0 && (
-                    <CitationList citations={entry.response.citations} />
-                  )}
-                </div>
+                  entry.response.refused ? (
+                  <RefusalBox response={entry.response} />
+                ) : (
+                  <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm max-w-[80%]">
+                    <p className="whitespace-pre-wrap">{entry.response.answer}</p>
+                    {entry.response.citations.length > 0 && (
+                      <CitationList citations={entry.response.citations} />
+                    )}
+                  </div>
+                )
               ) : entry.error ? (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 max-w-[80%]">
                   {entry.error}
@@ -143,6 +147,23 @@ export default function ChatPage() {
           {loading ? "Wysylanie..." : "Wyslij"}
         </button>
       </form>
+    </div>
+  );
+}
+
+/** Display a refusal info box with message, clarifying question, and suggestion. */
+function RefusalBox({response}: {response: ChatResponse}) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm max-w-[80%]">
+      {response.refusalMessage && (
+        <p className="font-medium text-amber-800">{response.refusalMessage}</p>
+      )}
+      {response.clarifyingQuestion && (
+        <p className="mt-2 text-amber-700">{response.clarifyingQuestion}</p>
+      )}
+      {response.suggestion && (
+        <p className="mt-2 text-xs text-amber-600">{response.suggestion}</p>
+      )}
     </div>
   );
 }
